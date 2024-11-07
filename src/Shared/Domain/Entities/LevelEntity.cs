@@ -23,7 +23,7 @@ namespace LevelEntity
             foreach (GameObject gameObject in gameObjects)
             {
                 float layer = 1.0f;
-                if (gameObject.player) layer = 0.0f;
+                if (gameObject.isPlayer) layer = 0.0f;
 
                 if (gameObject.texture != null)
                 {
@@ -46,7 +46,7 @@ namespace LevelEntity
         {
             for (int i = 0; i < gameObjects.Count; i++)
             {
-                if (gameObjects[i].player) return gameObjects[i];
+                if (gameObjects[i].isPlayer) return gameObjects[i];
             }
 
             return null;
