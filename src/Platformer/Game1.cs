@@ -3,96 +3,115 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using GameObjectEntity;
 using LevelEntity;
+using PhysicalBodyEntity;
+using ControllerEntity;
 
 namespace Platformer
 {
     public class Game1 : Game
     {
-        private GraphicsDeviceManager graphics;
-        private SpriteBatch spriteBatch;
-        private Level currentLevel;
-        private GameObject player;
-        private KeyboardState previousKeyboardState;
+        private GraphicsDeviceManager Graphics;
+        private SpriteBatch SpriteBatch;
+        private Level CurrentLevel;
 
         public Game1()
         {
-            graphics = new GraphicsDeviceManager(this);
+            Graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
         }
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-
-            Vector2 screenCenter = new Vector2(graphics.PreferredBackBufferWidth / 2, graphics.PreferredBackBufferHeight / 2);
+            Vector2 screenCenter = new Vector2(Graphics.PreferredBackBufferWidth / 2, Graphics.PreferredBackBufferHeight / 2);
 
             GameObject person = new GameObject("Player", screenCenter, "person");
-            person.isPlayer = true;
-            GameObject tree = new GameObject("Tree", screenCenter + new Vector2(200, graphics.PreferredBackBufferHeight / 2 - 96), "tree");
-            tree.isStatic = true;
+            person.PhysicalBody = new PhysicalBody();
+            person.Controller = new Controller();
+            person.layer = 1;
+
+            GameObject tree = new GameObject("Tree", screenCenter + new Vector2(200, Graphics.PreferredBackBufferHeight / 2 - 96), "tree");
+            tree.PhysicalBody = new PhysicalBody();
+            tree.PhysicalBody.IsStatic = true;
 
             Level testLevel = new Level();
             testLevel.gameObjects.Add(person);
             testLevel.gameObjects.Add(tree);
-            currentLevel = testLevel;
-
-            player = currentLevel.GetPlayer();
-
-            previousKeyboardState = Keyboard.GetState();
+            CurrentLevel = testLevel;
 
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
-            spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            // TODO: use this.Content to load your game content here
-
-            currentLevel.LoadGameObjectTextures(Content);
+            SpriteBatch = new SpriteBatch(GraphicsDevice);
+            CurrentLevel.LoadGameObjectTextures(Content);
         }
 
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
+            //Exit
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape)) Exit();
 
-            // TODO: Add your update logic here
-
-            if (player != null)
+            foreach (GameObject gameObject in CurrentLevel.gameObjects)
             {
-                var keyboardState = Keyboard.GetState();
-                Vector2 moveDirection = new Vector2();
-                if (keyboardState.IsKeyDown(Keys.Right)) moveDirection.X++;
-                if (keyboardState.IsKeyDown(Keys.Left)) moveDirection.X--;
-                if (keyboardState.IsKeyDown(Keys.Up) && keyboardState.IsKeyDown(Keys.Up) != previousKeyboardState.IsKeyDown(Keys.Up) && (player.isGrounded || player.isOnBottomEdge)) 
-                    player.velocity = new Vector2(player.velocity.X, -10);
-
-                player.isGrounded = false;
-                foreach (GameObject gameObject in currentLevel.gameObjects)
+                //Input
+                if (gameObject.Controller != null)
                 {
-                    if (gameObject != player && player.GetBoundingBox().Intersects(gameObject.GetBoundingBox()))
+                    gameObject.Controller.GetInput();
+                    if (gameObject.PhysicalBody.IsGrounded && gameObject.Controller.IsJumping && gameObject.PhysicalBody.Velocity.Y >= 0) gameObject.PhysicalBody.AddVelocityY(-15f);
+                    gameObject.PhysicalBody.AddVelocityX(gameObject.Controller.MoveX);
+                }
+
+                //Physics
+                if (gameObject.PhysicalBody != null && !gameObject.PhysicalBody.IsStatic)
+                {
+                    //X axis
+                    gameObject.PhysicalBody.DampVelocityX(0.33f);
+                    Vector2 oldPosition = gameObject.Position;
+                    gameObject.SetPositionX(oldPosition.X + gameObject.PhysicalBody.Velocity.X);
+
+                    foreach (GameObject other in CurrentLevel.gameObjects)
                     {
-                        if (moveDirection.X > 0 && player.position.X < gameObject.position.X) moveDirection.X = 0;
-                        if (moveDirection.X < 0 && player.position.X > gameObject.position.X) moveDirection.X = 0;
+                        if (gameObject != other && other.PhysicalBody != null && gameObject.GetBoundingBox().Intersects(other.GetBoundingBox()))
+                        {
+                            int steps = 10;
+                            for(int i = 0; i < steps; i++)
+                            {
+                                gameObject.SetPositionX(oldPosition.X + gameObject.PhysicalBody.Velocity.X * (1f / steps) * (steps - i));
+                                if (!gameObject.GetBoundingBox().Intersects(other.GetBoundingBox())) break;
+                                gameObject.Position = oldPosition;
+                            }
+                            gameObject.PhysicalBody.SetVelocityX(0);
+                            break;
+                        }
                     }
-                    if (gameObject != player && player.GetGroundCheck().Intersects(gameObject.GetBoundingBox())) player.isGrounded = true;
+
+                    //Y axis
+                    oldPosition = gameObject.Position;
+                    if (!gameObject.PhysicalBody.IsGrounded) gameObject.PhysicalBody.AddVelocityY(0.5f);
+                    gameObject.SetPositionY(oldPosition.Y + gameObject.PhysicalBody.Velocity.Y);
+                    gameObject.PhysicalBody.IsGrounded = false;
+
+                    foreach (GameObject other in CurrentLevel.gameObjects)
+                    {
+                        if (gameObject != other && other.PhysicalBody != null && gameObject.GetBoundingBox().Intersects(other.GetBoundingBox()))
+                        {
+                            int steps = 10;
+                            for (int i = 0; i < steps; i++)
+                            {
+                                gameObject.SetPositionY(oldPosition.Y + gameObject.PhysicalBody.Velocity.Y * (1f / steps) * (steps - i));
+                                if (!gameObject.GetBoundingBox().Intersects(other.GetBoundingBox())) break;
+                                gameObject.Position = oldPosition;
+                            }
+                            gameObject.PhysicalBody.IsGrounded = true;
+                            gameObject.PhysicalBody.SetVelocityY(0);
+                            break;
+                        }
+                    }
                 }
 
-                player.position += moveDirection * 300f * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                previousKeyboardState = keyboardState;
-            }
-
-            foreach (GameObject gameObject in currentLevel.gameObjects)
-            {
-                if (!gameObject.isStatic)
-                {                    
-                    if (!gameObject.isGrounded) gameObject.velocity = new Vector2(gameObject.velocity.X, gameObject.velocity.Y + 0.2f);
-                    else if (gameObject.velocity.Y > 0.5f) gameObject.velocity = new Vector2(gameObject.velocity.X, 0);
-                    gameObject.position += gameObject.velocity;
-                    gameObject.KeepInScreenBounds(graphics);
-                }
+                gameObject.Position = gameObject.PhysicalBody.KeepInScreenBounds(Graphics, gameObject.Texture, gameObject.Position);
             }
 
             base.Update(gameTime);
@@ -101,12 +120,9 @@ namespace Platformer
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            // TODO: Add your drawing code here
-
-            spriteBatch.Begin(SpriteSortMode.BackToFront);
-            currentLevel.DrawGameObjects(spriteBatch);
-            spriteBatch.End();
+            SpriteBatch.Begin(SpriteSortMode.BackToFront);
+            CurrentLevel.DrawGameObjects(SpriteBatch);
+            SpriteBatch.End();
 
             base.Draw(gameTime);
         }

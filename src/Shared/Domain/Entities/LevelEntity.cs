@@ -14,7 +14,7 @@ namespace LevelEntity
         {
             foreach (GameObject gameObject in gameObjects)
             {
-                gameObject.texture = content.Load<Texture2D>(gameObject.textureName);
+                gameObject.Texture = content.Load<Texture2D>(gameObject.TextureName);
             }
         }
 
@@ -22,34 +22,21 @@ namespace LevelEntity
         {
             foreach (GameObject gameObject in gameObjects)
             {
-                float layer = 1.0f;
-                if (gameObject.isPlayer) layer = 0.0f;
-
-                if (gameObject.texture != null)
+                if (gameObject.Texture != null)
                 {
                     spriteBatch.Draw(
-                    gameObject.texture,
-                    gameObject.position,
+                    gameObject.Texture,
+                    gameObject.Position,
                     null,
                     Color.White,
                     0f,
-                    new Vector2(gameObject.texture.Width / 2, gameObject.texture.Height / 2),
+                    new Vector2(gameObject.Texture.Width / 2, gameObject.Texture.Height / 2),
                     Vector2.One,
                     SpriteEffects.None,
-                    layer
+                    gameObject.layer
                 );
                 }
             }
-        }
-
-        public GameObject? GetPlayer()
-        {
-            for (int i = 0; i < gameObjects.Count; i++)
-            {
-                if (gameObjects[i].isPlayer) return gameObjects[i];
-            }
-
-            return null;
         }
     }
 }
