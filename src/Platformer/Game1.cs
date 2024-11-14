@@ -28,7 +28,7 @@ namespace Platformer
             GameObject person = new GameObject("Player", screenCenter, "person");
             person.PhysicalBody = new PhysicalBody();
             person.Controller = new Controller();
-            person.layer = 1;
+            person.Layer = 0.5f;
 
             GameObject tree = new GameObject("Tree", screenCenter + new Vector2(200, Graphics.PreferredBackBufferHeight / 2 - 96), "tree");
             tree.PhysicalBody = new PhysicalBody();

@@ -10,7 +10,7 @@ namespace GameObjectEntity
         public Vector2 Position { get; set; }
         public string TextureName { get; set; } = "";
         public Texture2D? Texture { get; set; }
-        public float layer { get; set; } = 1;
+        public float Layer { get; set; } = 1;
         public PhysicalBody? PhysicalBody { get; set; }
         public Controller? Controller { get; set; }
 

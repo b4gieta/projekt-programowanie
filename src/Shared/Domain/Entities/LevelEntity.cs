@@ -33,7 +33,7 @@ namespace LevelEntity
                     new Vector2(gameObject.Texture.Width / 2, gameObject.Texture.Height / 2),
                     Vector2.One,
                     SpriteEffects.None,
-                    gameObject.layer
+                    gameObject.Layer
                 );
                 }
             }
