@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using CameraEntity;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace PhysicalBodyEntity
@@ -45,26 +46,27 @@ namespace PhysicalBodyEntity
             }
         }
 
-        public Vector2 KeepInScreenBounds(GraphicsDeviceManager graphics, Texture2D texture, Vector2 position)
+        public Vector2 KeepInScreenBounds(GraphicsDeviceManager graphics, Texture2D texture, Vector2 position, Camera cam)
         {
             Vector2 newPosition = position;
+            Vector2 camOffset = cam.Position - cam.Origin;
 
-            if (position.X > graphics.PreferredBackBufferWidth - texture.Width / 2)
+            if (position.X - camOffset.X > graphics.PreferredBackBufferWidth - texture.Width / 2)
             {
                 newPosition.X = graphics.PreferredBackBufferWidth - texture.Width / 2;
             }
-            else if (position.X < texture.Width / 2)
+            else if (position.X - camOffset.X < texture.Width / 2)
             {
                 newPosition.X = texture.Width / 2;
             }
 
-            if (position.Y > graphics.PreferredBackBufferHeight - texture.Height / 2)
+            if (position.Y - camOffset.Y > graphics.PreferredBackBufferHeight - texture.Height / 2)
             {
                 newPosition.Y = graphics.PreferredBackBufferHeight - texture.Height / 2;
                 IsGrounded = true;
                 SetVelocityY(0);
             }
-            else if (position.Y < texture.Height / 2)
+            else if (position.Y - camOffset.Y < texture.Height / 2)
             {
                 newPosition.Y = texture.Height / 2;
                 SetVelocityY(0);

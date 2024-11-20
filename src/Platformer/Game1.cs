@@ -5,6 +5,7 @@ using GameObjectEntity;
 using LevelEntity;
 using PhysicalBodyEntity;
 using ControllerEntity;
+using CameraEntity;
 
 namespace Platformer
 {
@@ -13,6 +14,7 @@ namespace Platformer
         private GraphicsDeviceManager Graphics;
         private SpriteBatch SpriteBatch;
         private Level CurrentLevel;
+        private Camera MainCamera;
 
         public Game1()
         {
@@ -25,19 +27,24 @@ namespace Platformer
         {
             Vector2 screenCenter = new Vector2(Graphics.PreferredBackBufferWidth / 2, Graphics.PreferredBackBufferHeight / 2);
 
+            Level testLevel = new Level();
+
             GameObject person = new GameObject("Player", screenCenter, "person");
             person.PhysicalBody = new PhysicalBody();
             person.Controller = new Controller();
             person.Layer = 0.5f;
-
-            GameObject tree = new GameObject("Tree", screenCenter + new Vector2(200, Graphics.PreferredBackBufferHeight / 2 - 96), "tree");
-            tree.PhysicalBody = new PhysicalBody();
-            tree.PhysicalBody.IsStatic = true;
-
-            Level testLevel = new Level();
             testLevel.gameObjects.Add(person);
-            testLevel.gameObjects.Add(tree);
+
+            for (int i = 0; i < 32; i++)
+            {
+                GameObject grass = new GameObject("Grass", new Vector2(32 + 64 * i, Graphics.PreferredBackBufferHeight - 32), "grass");
+                grass.PhysicalBody = new PhysicalBody();
+                grass.PhysicalBody.IsStatic = true;
+                testLevel.gameObjects.Add(grass);
+            }
+
             CurrentLevel = testLevel;
+            MainCamera = new Camera(person, screenCenter);
 
             base.Initialize();
         }
@@ -53,6 +60,7 @@ namespace Platformer
             //Exit
             if (Keyboard.GetState().IsKeyDown(Keys.Escape)) Exit();
 
+            //GameObjects
             foreach (GameObject gameObject in CurrentLevel.gameObjects)
             {
                 //Input
@@ -111,8 +119,11 @@ namespace Platformer
                     }
                 }
 
-                gameObject.Position = gameObject.PhysicalBody.KeepInScreenBounds(Graphics, gameObject.Texture, gameObject.Position);
+                if (gameObject.Controller != null) gameObject.Position = gameObject.PhysicalBody.KeepInScreenBounds(Graphics, gameObject.Texture, gameObject.Position, MainCamera);
             }
+
+            //Camera
+            MainCamera.UpdatePosition();
 
             base.Update(gameTime);
         }
@@ -121,7 +132,7 @@ namespace Platformer
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
             SpriteBatch.Begin(SpriteSortMode.BackToFront);
-            CurrentLevel.DrawGameObjects(SpriteBatch);
+            CurrentLevel.DrawGameObjects(SpriteBatch, MainCamera.Origin - MainCamera.Position);
             SpriteBatch.End();
 
             base.Draw(gameTime);

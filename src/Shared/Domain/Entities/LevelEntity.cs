@@ -18,7 +18,7 @@ namespace LevelEntity
             }
         }
 
-        public void DrawGameObjects(SpriteBatch spriteBatch)
+        public void DrawGameObjects(SpriteBatch spriteBatch, Vector2 offset)
         {
             foreach (GameObject gameObject in gameObjects)
             {
@@ -26,7 +26,7 @@ namespace LevelEntity
                 {
                     spriteBatch.Draw(
                     gameObject.Texture,
-                    gameObject.Position,
+                    gameObject.Position + offset,
                     null,
                     Color.White,
                     0f,
