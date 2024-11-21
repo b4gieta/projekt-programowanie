@@ -13,6 +13,8 @@ namespace GameObjectEntity
         public float Layer { get; set; } = 1;
         public PhysicalBody? PhysicalBody { get; set; }
         public Controller? Controller { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
 
         public GameObject(string name, Vector2 position, string textureName)
         {
@@ -31,9 +33,18 @@ namespace GameObjectEntity
             Position = new Vector2(Position.X, posY);
         }
 
+        public void SetSize()
+        {
+            if (Texture != null)
+            {
+                Width = Texture.Width;
+                Height = Texture.Height;
+            }
+        }
+
         public Rectangle GetBoundingBox()
         {
-            if (Texture != null) return new Rectangle((int)Position.X - Texture.Width / 2, (int)Position.Y - Texture.Height / 2, Texture.Width, Texture.Height);
+            if (Texture != null) return new Rectangle((int)Position.X - Texture.Width / 2, (int)Position.Y - Texture.Height / 2, Width, Height);
             else return new Rectangle((int)Position.X, (int)Position.Y, 0, 0);
         }
     }

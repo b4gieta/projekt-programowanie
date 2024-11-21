@@ -6,20 +6,17 @@ using LevelEntity;
 using PhysicalBodyEntity;
 using ControllerEntity;
 using CameraEntity;
-using System.IO;
-using System.Diagnostics;
-using System;
 
 namespace Platformer
 {
-    public class Game1 : Game
+    public class MainGame : Game
     {
         private GraphicsDeviceManager Graphics;
         private SpriteBatch SpriteBatch;
         private Level CurrentLevel;
         private Camera MainCamera;
 
-        public Game1()
+        public MainGame()
         {
             Graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -62,7 +59,7 @@ namespace Platformer
                 if (gameObject.Controller != null)
                 {
                     gameObject.Controller.GetInput();
-                    if (gameObject.PhysicalBody.IsGrounded && gameObject.Controller.IsJumping && gameObject.PhysicalBody.Velocity.Y >= 0) gameObject.PhysicalBody.AddVelocityY(-15f);
+                    if (gameObject.PhysicalBody.IsGrounded && gameObject.Controller.IsJumping && gameObject.PhysicalBody.Velocity.Y >= 0) gameObject.PhysicalBody.AddVelocityY(-20f);
                     gameObject.PhysicalBody.AddVelocityX(gameObject.Controller.MoveX);
                 }
 
@@ -92,7 +89,7 @@ namespace Platformer
 
                     //Y axis
                     oldPosition = gameObject.Position;
-                    if (!gameObject.PhysicalBody.IsGrounded) gameObject.PhysicalBody.AddVelocityY(0.5f);
+                    if (!gameObject.PhysicalBody.IsGrounded) gameObject.PhysicalBody.AddVelocityY(0.9f);
                     gameObject.SetPositionY(oldPosition.Y + gameObject.PhysicalBody.Velocity.Y);
                     gameObject.PhysicalBody.IsGrounded = false;
 
@@ -107,7 +104,7 @@ namespace Platformer
                                 if (!gameObject.GetBoundingBox().Intersects(other.GetBoundingBox())) break;
                                 gameObject.Position = oldPosition;
                             }
-                            gameObject.PhysicalBody.IsGrounded = true;
+                            if (gameObject.PhysicalBody.Velocity.Y >= 0) gameObject.PhysicalBody.IsGrounded = true;
                             gameObject.PhysicalBody.SetVelocityY(0);
                             break;
                         }

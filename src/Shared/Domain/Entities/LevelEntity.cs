@@ -17,6 +17,7 @@ namespace LevelEntity
             foreach (GameObject gameObject in GameObjects)
             {
                 gameObject.Texture = content.Load<Texture2D>(gameObject.TextureName);
+                gameObject.SetSize();
             }
         }
 
