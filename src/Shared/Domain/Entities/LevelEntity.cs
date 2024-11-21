@@ -2,17 +2,19 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using PhysicalBodyEntity;
 
 namespace LevelEntity
 {
     public class Level
     {
-        public string name { get; set; } = "";
-        public List<GameObject> gameObjects = new List<GameObject>();
+        public string Name { get; set; } = "";
+        public List<GameObject> GameObjects = new List<GameObject>();
+        public Vector2 PlayerSpawn { get; set; }
 
         public void LoadGameObjectTextures(ContentManager content)
         {
-            foreach (GameObject gameObject in gameObjects)
+            foreach (GameObject gameObject in GameObjects)
             {
                 gameObject.Texture = content.Load<Texture2D>(gameObject.TextureName);
             }
@@ -20,7 +22,7 @@ namespace LevelEntity
 
         public void DrawGameObjects(SpriteBatch spriteBatch, Vector2 offset)
         {
-            foreach (GameObject gameObject in gameObjects)
+            foreach (GameObject gameObject in GameObjects)
             {
                 if (gameObject.Texture != null)
                 {
@@ -35,6 +37,28 @@ namespace LevelEntity
                     SpriteEffects.None,
                     gameObject.Layer
                 );
+                }
+            }
+        }
+
+        public Level(string fileName)
+        {
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "../../../Content/Levels/" + fileName);
+            string[] fileContent = File.ReadAllLines(filePath);
+
+            for (int i = 0; i < fileContent.Length; i++)
+            {
+                for (int j = 0; j < fileContent[i].Length; j++)
+                {
+                    if (fileContent[i][j] == 'D')
+                    {
+                        GameObject grass = new GameObject("Grass", new Vector2(32 + 64 * j, 32 + 64 * i), "Sprites/grass");
+                        grass.PhysicalBody = new PhysicalBody();
+                        grass.PhysicalBody.IsStatic = true;
+                        GameObjects.Add(grass);
+                    }
+
+                    else if (fileContent[i][j] == 'P') PlayerSpawn = new Vector2(32 + 64 * j, 32 + 64 * i);
                 }
             }
         }

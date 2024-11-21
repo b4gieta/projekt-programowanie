@@ -6,6 +6,9 @@ using LevelEntity;
 using PhysicalBodyEntity;
 using ControllerEntity;
 using CameraEntity;
+using System.IO;
+using System.Diagnostics;
+using System;
 
 namespace Platformer
 {
@@ -27,23 +30,15 @@ namespace Platformer
         {
             Vector2 screenCenter = new Vector2(Graphics.PreferredBackBufferWidth / 2, Graphics.PreferredBackBufferHeight / 2);
 
-            Level testLevel = new Level();
+            CurrentLevel = new Level("lvl1.txt");
 
-            GameObject person = new GameObject("Player", screenCenter, "person");
+            GameObject person = new GameObject("Player", screenCenter, "Sprites/person");
             person.PhysicalBody = new PhysicalBody();
             person.Controller = new Controller();
             person.Layer = 0.5f;
-            testLevel.gameObjects.Add(person);
+            person.Position = CurrentLevel.PlayerSpawn;
+            CurrentLevel.GameObjects.Add(person);
 
-            for (int i = 0; i < 32; i++)
-            {
-                GameObject grass = new GameObject("Grass", new Vector2(32 + 64 * i, Graphics.PreferredBackBufferHeight - 32), "grass");
-                grass.PhysicalBody = new PhysicalBody();
-                grass.PhysicalBody.IsStatic = true;
-                testLevel.gameObjects.Add(grass);
-            }
-
-            CurrentLevel = testLevel;
             MainCamera = new Camera(person, screenCenter);
 
             base.Initialize();
@@ -61,7 +56,7 @@ namespace Platformer
             if (Keyboard.GetState().IsKeyDown(Keys.Escape)) Exit();
 
             //GameObjects
-            foreach (GameObject gameObject in CurrentLevel.gameObjects)
+            foreach (GameObject gameObject in CurrentLevel.GameObjects)
             {
                 //Input
                 if (gameObject.Controller != null)
@@ -79,7 +74,7 @@ namespace Platformer
                     Vector2 oldPosition = gameObject.Position;
                     gameObject.SetPositionX(oldPosition.X + gameObject.PhysicalBody.Velocity.X);
 
-                    foreach (GameObject other in CurrentLevel.gameObjects)
+                    foreach (GameObject other in CurrentLevel.GameObjects)
                     {
                         if (gameObject != other && other.PhysicalBody != null && gameObject.GetBoundingBox().Intersects(other.GetBoundingBox()))
                         {
@@ -101,7 +96,7 @@ namespace Platformer
                     gameObject.SetPositionY(oldPosition.Y + gameObject.PhysicalBody.Velocity.Y);
                     gameObject.PhysicalBody.IsGrounded = false;
 
-                    foreach (GameObject other in CurrentLevel.gameObjects)
+                    foreach (GameObject other in CurrentLevel.GameObjects)
                     {
                         if (gameObject != other && other.PhysicalBody != null && gameObject.GetBoundingBox().Intersects(other.GetBoundingBox()))
                         {
