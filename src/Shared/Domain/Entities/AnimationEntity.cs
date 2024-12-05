@@ -36,10 +36,11 @@ namespace AnimationEntity
 
         public Rectangle GetAnimationFrame(int width, int height)
         {
+            int offset = 8;
             Rectangle result = new Rectangle(0, 0, width, height);
-            if (CurrentState == State.Walking) result = new Rectangle(width * WalkFrame, height, width, height);
-            else if (CurrentState == State.Jumping) result = new Rectangle(0, height * 2, width, height);
-            else if (CurrentState == State.Falling) result = new Rectangle(width, height * 2, width, height);
+            if (CurrentState == State.Walking) result = new Rectangle((width + offset) * WalkFrame, height + offset, width, height);
+            else if (CurrentState == State.Jumping) result = new Rectangle(0, (height + offset) * 2, width, height);
+            else if (CurrentState == State.Falling) result = new Rectangle(width + offset, (height + offset) * 2, width, height);
 
             return result;
         }
