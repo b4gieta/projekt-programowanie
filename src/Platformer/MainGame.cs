@@ -6,6 +6,7 @@ using LevelEntity;
 using PhysicalBodyEntity;
 using ControllerEntity;
 using CameraEntity;
+using AnimationEntity;
 
 namespace Platformer
 {
@@ -29,10 +30,13 @@ namespace Platformer
 
             CurrentLevel = new Level("lvl1.txt");
 
-            GameObject person = new GameObject("Player", screenCenter, "Sprites/person");
+            GameObject person = new GameObject("Player", screenCenter, "Sprites/player anim");
             person.PhysicalBody = new PhysicalBody();
             person.Controller = new Controller();
+            person.Animation = new Animation();
             person.Layer = 0.5f;
+            person.Width = 32;
+            person.Height = 64;
             person.Position = CurrentLevel.PlayerSpawn;
             CurrentLevel.GameObjects.Add(person);
 
@@ -61,6 +65,11 @@ namespace Platformer
                     gameObject.Controller.GetInput();
                     if (gameObject.PhysicalBody.IsGrounded && gameObject.Controller.IsJumping && gameObject.PhysicalBody.Velocity.Y >= 0) gameObject.PhysicalBody.AddVelocityY(-20f);
                     gameObject.PhysicalBody.AddVelocityX(gameObject.Controller.MoveX);
+                    if (gameObject.Controller.MoveX > 0) gameObject.Flip = false;
+                    else if (gameObject.Controller.MoveX < 0) gameObject.Flip = true;
+
+                    if (gameObject.Controller.MoveX != 0) gameObject.Animation.CurrentState = Animation.State.Walking;
+                    else gameObject.Animation.CurrentState = Animation.State.Idle;
                 }
 
                 //Physics
@@ -109,9 +118,16 @@ namespace Platformer
                             break;
                         }
                     }
+
+                    if (!gameObject.PhysicalBody.IsGrounded && gameObject.Animation != null)
+                    {
+                        if (gameObject.PhysicalBody.Velocity.Y < 0) gameObject.Animation.CurrentState = Animation.State.Jumping;
+                        else if (gameObject.PhysicalBody.Velocity.Y > 0) gameObject.Animation.CurrentState = Animation.State.Falling;
+                    }
                 }
 
-                if (gameObject.Controller != null) gameObject.Position = gameObject.PhysicalBody.KeepInScreenBounds(Graphics, gameObject.Texture, gameObject.Position, MainCamera);
+                //Animation
+                if (gameObject.Animation != null) gameObject.Animation.EvaluateState(2f/60f);
             }
 
             //Camera

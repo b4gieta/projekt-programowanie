@@ -25,17 +25,26 @@ namespace LevelEntity
         {
             foreach (GameObject gameObject in GameObjects)
             {
+                SpriteEffects flip = SpriteEffects.None;
+                if (gameObject.Flip) flip = SpriteEffects.FlipHorizontally;
+
                 if (gameObject.Texture != null)
                 {
+                    Rectangle? spriteSheetPart = null;
+                    if (gameObject.Animation != null)
+                    {
+                        spriteSheetPart = gameObject.Animation.GetAnimationFrame(gameObject.Width, gameObject.Height);
+                    }
+
                     spriteBatch.Draw(
                     gameObject.Texture,
                     gameObject.Position + offset,
-                    null,
+                    spriteSheetPart,
                     Color.White,
                     0f,
-                    new Vector2(gameObject.Texture.Width / 2, gameObject.Texture.Height / 2),
+                    new Vector2(gameObject.Width / 2, gameObject.Height / 2),
                     Vector2.One,
-                    SpriteEffects.None,
+                    flip,
                     gameObject.Layer
                 );
                 }

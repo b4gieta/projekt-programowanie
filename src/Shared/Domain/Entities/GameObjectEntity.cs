@@ -1,4 +1,5 @@
-﻿using ControllerEntity;
+﻿using AnimationEntity;
+using ControllerEntity;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using PhysicalBodyEntity;
@@ -11,10 +12,13 @@ namespace GameObjectEntity
         public string TextureName { get; set; } = "";
         public Texture2D? Texture { get; set; }
         public float Layer { get; set; } = 1;
-        public PhysicalBody? PhysicalBody { get; set; }
-        public Controller? Controller { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
+        public bool Flip { get; set; }
+        public PhysicalBody? PhysicalBody { get; set; }
+        public Controller? Controller { get; set; }
+        public Animation? Animation { get; set; }
+        
 
         public GameObject(string name, Vector2 position, string textureName)
         {
@@ -37,14 +41,14 @@ namespace GameObjectEntity
         {
             if (Texture != null)
             {
-                Width = Texture.Width;
-                Height = Texture.Height;
+                if (Width == 0) Width = Texture.Width;
+                if (Height == 0) Height = Texture.Height;
             }
         }
 
         public Rectangle GetBoundingBox()
         {
-            if (Texture != null) return new Rectangle((int)Position.X - Texture.Width / 2, (int)Position.Y - Texture.Height / 2, Width, Height);
+            if (Texture != null) return new Rectangle((int)Position.X - Width / 2, (int)Position.Y - Height / 2, Width, Height);
             else return new Rectangle((int)Position.X, (int)Position.Y, 0, 0);
         }
     }
