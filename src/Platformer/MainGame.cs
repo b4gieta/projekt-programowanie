@@ -7,6 +7,7 @@ using PhysicalBodyEntity;
 using ControllerEntity;
 using CameraEntity;
 using AnimationEntity;
+using SaveEntity;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,6 +21,12 @@ namespace Platformer
         private Level CurrentLevel;
         private Camera MainCamera;
 
+        private int Score;
+        private float TimeToPoint;
+
+        SpriteFont DefaultFont;
+        Vector2 FontPosition;
+
         public MainGame()
         {
             Graphics = new GraphicsDeviceManager(this);
@@ -30,6 +37,7 @@ namespace Platformer
         protected override void Initialize()
         {
             Vector2 screenCenter = new Vector2(Graphics.PreferredBackBufferWidth / 2, Graphics.PreferredBackBufferHeight / 2);
+            FontPosition = new Vector2(Graphics.GraphicsDevice.Viewport.Width / 2, 100);
 
             CurrentLevel = new Level("lvl1.txt");
 
@@ -44,6 +52,8 @@ namespace Platformer
 
             MainCamera = new Camera(person, screenCenter);
 
+            Score = SaveSystem.Load().Score;
+
             base.Initialize();
         }
 
@@ -51,12 +61,18 @@ namespace Platformer
         {
             SpriteBatch = new SpriteBatch(GraphicsDevice);
             CurrentLevel.LoadGameObjectTextures(Content);
+            DefaultFont = Content.Load<SpriteFont>("Arial");
         }
 
         protected override void Update(GameTime gameTime)
         {
             //Exit
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape)) Exit();
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
+            {
+                SaveSystem.Save(Score);
+                Debug.WriteLine(SaveSystem.GetSavePath());
+                Exit();
+            }            
 
             //GameObjects
             List<GameObject> gameObjectsToRemove = new List<GameObject>();
@@ -191,6 +207,7 @@ namespace Platformer
                 //Get dead enemnies
                 if (gameObject.Enemy != null && gameObject.Enemy.IsDead)
                 {
+                    Score += 1000;
                     gameObjectsToRemove.Add(gameObject);
                 }
             }
@@ -204,6 +221,14 @@ namespace Platformer
             //Camera
             MainCamera.UpdatePosition();
 
+            //Score
+            TimeToPoint += (1f / 60f);
+            if (TimeToPoint > 0.5f)
+            {
+                TimeToPoint = 0;
+                Score += 1;
+            }
+
             base.Update(gameTime);
         }
 
@@ -211,7 +236,13 @@ namespace Platformer
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
             SpriteBatch.Begin(SpriteSortMode.BackToFront);
+
             CurrentLevel.DrawGameObjects(SpriteBatch, MainCamera.Origin - MainCamera.Position);
+
+            string output = "Score: " + Score.ToString();
+            Vector2 FontOrigin = DefaultFont.MeasureString(output) / 2;
+            SpriteBatch.DrawString(DefaultFont, output, FontPosition, Color.Black, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.1f);
+
             SpriteBatch.End();
 
             base.Draw(gameTime);
