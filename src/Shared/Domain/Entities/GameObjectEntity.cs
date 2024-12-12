@@ -1,5 +1,6 @@
 ﻿using AnimationEntity;
 using ControllerEntity;
+using EnemyEntity;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using PhysicalBodyEntity;
@@ -18,8 +19,8 @@ namespace GameObjectEntity
         public PhysicalBody? PhysicalBody { get; set; }
         public Controller? Controller { get; set; }
         public Animation? Animation { get; set; }
+        public Enemy? Enemy { get; set; }
         
-
         public GameObject(string name, Vector2 position, string textureName)
         {
             Name = name;
@@ -50,6 +51,12 @@ namespace GameObjectEntity
         {
             if (Texture != null) return new Rectangle((int)Position.X - Width / 2, (int)Position.Y - Height / 2, Width, Height);
             else return new Rectangle((int)Position.X, (int)Position.Y, 0, 0);
+        }
+
+        public int[] GetTile()
+        {
+            int[] result = [(int)Math.Round((Position.X / 64)), (int)Math.Round((Position.Y / 64))];
+            return result;
         }
     }
 }

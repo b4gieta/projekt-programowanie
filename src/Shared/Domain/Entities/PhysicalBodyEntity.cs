@@ -8,7 +8,7 @@ namespace PhysicalBodyEntity
     {
         public bool IsStatic { get; set; }
         public bool IsGrounded { get; set; }
-        public Vector2 Velocity { get; set; }        
+        public Vector2 Velocity { get; set; }
 
         public void AddVelocityX(float gain)
         {

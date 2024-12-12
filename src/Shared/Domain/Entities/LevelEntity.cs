@@ -3,14 +3,16 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using PhysicalBodyEntity;
+using EnemyEntity;
 
 namespace LevelEntity
 {
     public class Level
     {
         public string Name { get; set; } = "";
-        public List<GameObject> GameObjects = new List<GameObject>();
+        public List<GameObject> GameObjects { get; set; } = new List<GameObject>();
         public Vector2 PlayerSpawn { get; set; }
+        public string[] Tilemap { get; set; }
 
         public void LoadGameObjectTextures(ContentManager content)
         {
@@ -55,6 +57,7 @@ namespace LevelEntity
         {
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), "../../../Content/Levels/" + fileName);
             string[] fileContent = File.ReadAllLines(filePath);
+            Tilemap = fileContent;
 
             for (int i = 0; i < fileContent.Length; i++)
             {
@@ -69,6 +72,12 @@ namespace LevelEntity
                     }
 
                     else if (fileContent[i][j] == 'P') PlayerSpawn = new Vector2(32 + 64 * j, 32 + 64 * i);
+
+                    else if (fileContent[i][j] == 'G')
+                    {
+                        GameObject enemy = Enemy.GetGoomba(new Vector2(32 + 64 * j, 32 + 64 * i), "Sprites/enemy anim");
+                        GameObjects.Add(enemy);
+                    }
                 }
             }
         }
