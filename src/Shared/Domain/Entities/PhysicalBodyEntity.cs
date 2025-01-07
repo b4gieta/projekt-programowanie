@@ -9,12 +9,13 @@ namespace PhysicalBodyEntity
         public bool IsStatic { get; set; }
         public bool IsGrounded { get; set; }
         public Vector2 Velocity { get; set; }
+        public float MaxVelocityX { get; set; } = 6f;
 
         public void AddVelocityX(float gain)
         {
             Velocity = new Vector2(Velocity.X + gain, Velocity.Y);
-            if (Velocity.X > 6) Velocity = new Vector2(6, Velocity.Y);
-            else if (Velocity.X < -6) Velocity = new Vector2(-6, Velocity.Y);
+            if (Velocity.X > MaxVelocityX) Velocity = new Vector2(MaxVelocityX, Velocity.Y);
+            else if (Velocity.X < -MaxVelocityX) Velocity = new Vector2(-MaxVelocityX, Velocity.Y);
         }
 
         public void AddVelocityY(float gain)
@@ -46,29 +47,38 @@ namespace PhysicalBodyEntity
             }
         }
 
-        public Vector2 KeepInScreenBounds(GraphicsDeviceManager graphics, Texture2D texture, Vector2 position, Camera cam)
+        public Vector2 KeepInScreenBoundsX(GraphicsDeviceManager graphics, Rectangle hitbox, Vector2 position, Camera cam)
         {
             Vector2 newPosition = position;
             Vector2 camOffset = cam.Position - cam.Origin;
 
-            if (position.X - camOffset.X > graphics.PreferredBackBufferWidth - texture.Width / 2)
+            if (position.X - camOffset.X > graphics.GraphicsDevice.Viewport.Width - hitbox.Width / 2)
             {
-                newPosition.X = graphics.PreferredBackBufferWidth - texture.Width / 2;
+                newPosition.X = graphics.GraphicsDevice.Viewport.Width / 2 + cam.Position.X - hitbox.Width / 2;
+                SetVelocityX(0);
             }
-            else if (position.X - camOffset.X < texture.Width / 2)
+            else if (position.X - camOffset.X < hitbox.Width / 2)
             {
-                newPosition.X = texture.Width / 2;
+                newPosition.X = hitbox.Width / 2;
+                SetVelocityX(0);
             }
 
-            if (position.Y - camOffset.Y > graphics.PreferredBackBufferHeight - texture.Height / 2)
+            return newPosition;
+        }
+
+        public Vector2 KeepInScreenBoundsY(GraphicsDeviceManager graphics, Rectangle hitbox, Vector2 position, Camera cam)
+        {
+            Vector2 newPosition = position;
+            Vector2 camOffset = cam.Position - cam.Origin;
+
+            if (position.Y - camOffset.Y > graphics.GraphicsDevice.Viewport.Height - hitbox.Height / 2)
             {
-                newPosition.Y = graphics.PreferredBackBufferHeight - texture.Height / 2;
-                IsGrounded = true;
+                newPosition.Y = graphics.GraphicsDevice.Viewport.Height / 2 + cam.Position.Y - hitbox.Height / 2;
                 SetVelocityY(0);
             }
-            else if (position.Y - camOffset.Y < texture.Height / 2)
+            else if (position.Y - camOffset.Y < hitbox.Height / 2)
             {
-                newPosition.Y = texture.Height / 2;
+                newPosition.Y = hitbox.Height / 2;
                 SetVelocityY(0);
             }
 

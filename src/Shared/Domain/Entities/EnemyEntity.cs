@@ -14,6 +14,7 @@ namespace EnemyEntity
         {
             GameObject enemy = new GameObject("Goomba", spawn, spriteSheetName);
             enemy.PhysicalBody = new PhysicalBody();
+            enemy.PhysicalBody.MaxVelocityX = 3f;
             enemy.Animation = new Animation();
             enemy.Enemy = new Enemy();
             enemy.Layer = 0.6f;

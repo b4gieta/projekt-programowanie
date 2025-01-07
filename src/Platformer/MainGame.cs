@@ -51,7 +51,6 @@ namespace Platformer
             CurrentLevel.GameObjects.Add(person);
 
             MainCamera = new Camera(person, screenCenter);
-            MainCamera.leftBorder = 64;
             MainCamera.rightBorder = Convert.ToInt32(CurrentLevel.GridSize.X);
             MainCamera.topBorder = -512;
             MainCamera.bottomBorder = Convert.ToInt32(CurrentLevel.GridSize.Y);
@@ -193,6 +192,14 @@ namespace Platformer
                         }
                     }
 
+                    //Keep player in screen bounds horizontally
+                    if (gameObject.Controller != null)
+                    {
+                        Rectangle hitbox = new Rectangle(0, 0, gameObject.Width, gameObject.Height);
+                        gameObject.Position = gameObject.PhysicalBody.KeepInScreenBoundsX(Graphics, hitbox, gameObject.Position, MainCamera);
+                    }
+
+                    //Set animations
                     if (!gameObject.PhysicalBody.IsGrounded && gameObject.Animation != null)
                     {
                         if (gameObject.PhysicalBody.Velocity.Y < 0) gameObject.Animation.CurrentState = Animation.State.Jumping;
