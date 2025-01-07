@@ -49,7 +49,7 @@ namespace LevelEntity
                     Vector2.One,
                     flip,
                     gameObject.Layer
-                );
+                    );
                 }
             }
         }
