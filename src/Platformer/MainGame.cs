@@ -51,6 +51,10 @@ namespace Platformer
             CurrentLevel.GameObjects.Add(person);
 
             MainCamera = new Camera(person, screenCenter);
+            MainCamera.leftBorder = 64;
+            MainCamera.rightBorder = Convert.ToInt32(CurrentLevel.GridSize.X);
+            MainCamera.topBorder = -512;
+            MainCamera.bottomBorder = Convert.ToInt32(CurrentLevel.GridSize.Y);
 
             Score = SaveSystem.Load().Score;
 
@@ -219,7 +223,7 @@ namespace Platformer
             }
 
             //Camera
-            MainCamera.UpdatePosition();
+            MainCamera.UpdatePosition(Graphics);
 
             //Score
             TimeToPoint += (1f / 60f);

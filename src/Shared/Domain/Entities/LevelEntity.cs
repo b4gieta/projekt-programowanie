@@ -13,6 +13,7 @@ namespace LevelEntity
         public List<GameObject> GameObjects { get; set; } = new List<GameObject>();
         public Vector2 PlayerSpawn { get; set; }
         public string[] Tilemap { get; set; }
+        public Vector2 GridSize { get; set; }
 
         public void LoadGameObjectTextures(ContentManager content)
         {
@@ -80,6 +81,8 @@ namespace LevelEntity
                     }
                 }
             }
+
+            GridSize = new Vector2(fileContent[0].Length * 64, fileContent.Length * 64);
         }
     }
 }
