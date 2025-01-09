@@ -12,7 +12,9 @@ namespace GameObjectEntity
         public Vector2 Position { get; set; }
         public string TextureName { get; set; } = "";
         public Texture2D? Texture { get; set; }
-        public float Layer { get; set; } = 1;
+        public Vector2 TextureOffset { get; set; }
+        public Vector2 Parallax { get; set; }
+        public float Layer { get; set; } = 0.7f;
         public int Width { get; set; }
         public int Height { get; set; }
         public bool Flip { get; set; }
@@ -26,6 +28,7 @@ namespace GameObjectEntity
             Name = name;
             Position = position;
             TextureName = textureName;
+            Parallax = new Vector2(1, 1);
         }
 
         public void SetPositionX(float posX)

@@ -41,7 +41,7 @@ namespace UIElementEntity
             Texture2D texToDraw = TextureNormal;
             if (Click) texToDraw = TextureClick;
             else if (Hover) texToDraw = TextureHover;
-            spriteBatch.Draw(texToDraw, Position, null, Color.White, 0f, new Vector2(texToDraw.Width / 2, texToDraw.Height / 2), Vector2.One, SpriteEffects.None, 0.1f);
+            spriteBatch.Draw(texToDraw, Position, null, Color.White, 0f, new Vector2(texToDraw.Width / 2, texToDraw.Height / 2), Vector2.One, SpriteEffects.None, 0.001f);
         }
     }
 
@@ -57,7 +57,7 @@ namespace UIElementEntity
 
         public override void Draw(SpriteBatch spriteBatch)
         {
-            spriteBatch.Draw(Texture, Position, null, Color.White, 0f, new Vector2(Texture.Width / 2, Texture.Height / 2), Vector2.One, SpriteEffects.None, 0.2f);
+            spriteBatch.Draw(Texture, Position, null, Color.White, 0f, new Vector2(Texture.Width / 2, Texture.Height / 2), Vector2.One, SpriteEffects.None, 0.002f);
         }
     }
 }

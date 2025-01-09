@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using PhysicalBodyEntity;
 using EnemyEntity;
+using System.Diagnostics;
 
 namespace LevelEntity
 {
@@ -41,7 +42,7 @@ namespace LevelEntity
 
                     spriteBatch.Draw(
                     gameObject.Texture,
-                    gameObject.Position + offset,
+                    gameObject.Position + offset * gameObject.Parallax + gameObject.TextureOffset,
                     spriteSheetPart,
                     Color.White,
                     0f,
@@ -59,6 +60,7 @@ namespace LevelEntity
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), "../../../Content/Levels/" + fileName);
             string[] fileContent = File.ReadAllLines(filePath);
             Tilemap = fileContent;
+            Random rnd = new Random();
 
             for (int i = 0; i < fileContent.Length; i++)
             {
@@ -78,6 +80,22 @@ namespace LevelEntity
                     {
                         GameObject enemy = Enemy.GetGoomba(new Vector2(32 + 64 * j, 32 + 64 * i), "Sprites/enemy anim");
                         GameObjects.Add(enemy);
+                    }
+
+                    else if (fileContent[i][j] == 'T')
+                    {
+                        int trees = rnd.Next(1, 3);
+                        for (int k = 0; k < trees; k++)
+                        {
+                            int variant = rnd.Next(0, 2);
+                            GameObject tree = new GameObject("Tree", new Vector2(32 + 64 * j, 32 + 64 * i), $"Sprites/tree{variant}");
+                            tree.TextureOffset = new Vector2(rnd.Next(-30, 30), -64);
+                            tree.Layer = 0.8f + (0.01f * (j % 5)) + (0.1f * variant);
+                            tree.Parallax = new Vector2(0.9f - 0.05f * variant, 1f);
+                            if (rnd.Next(0, 100) > 50) tree.Flip = true;
+                            Debug.WriteLine(tree.Layer.ToString());
+                            GameObjects.Add(tree);
+                        }
                     }
                 }
             }

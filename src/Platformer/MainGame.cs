@@ -52,7 +52,7 @@ namespace Platformer
             person.PhysicalBody = new PhysicalBody();
             person.Controller = new Controller();
             person.Animation = new Animation();
-            person.Layer = 0.5f;
+            person.Layer = 0.1f;
             person.Width = 32;
             person.Height = 64;
             CurrentLevel.GameObjects.Add(person);
