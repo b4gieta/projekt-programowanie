@@ -17,6 +17,7 @@ namespace EnemyEntity
             enemy.PhysicalBody.MaxVelocityX = 3f;
             enemy.Animation = new Animation();
             enemy.Enemy = new Enemy();
+            enemy.Enemy.IsGoingRight = true;
             enemy.Layer = 0.11f;
             enemy.Width = 32;
             enemy.Height = 64;

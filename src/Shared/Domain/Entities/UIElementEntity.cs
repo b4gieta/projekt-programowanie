@@ -43,6 +43,12 @@ namespace UIElementEntity
             else if (Hover) texToDraw = TextureHover;
             spriteBatch.Draw(texToDraw, Position, null, Color.White, 0f, new Vector2(texToDraw.Width / 2, texToDraw.Height / 2), Vector2.One, SpriteEffects.None, 0.001f);
         }
+
+        public void DrawText(SpriteBatch spriteBatch, SpriteFont font)
+        {
+            Vector2 fontOrigin = font.MeasureString(Action.ToString()) / 2;
+            spriteBatch.DrawString(font, Action.ToString(), Position, Color.Black, 0, fontOrigin, 1.0f, SpriteEffects.None, 0f);
+        }
     }
 
     public class Image : UIElement

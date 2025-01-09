@@ -25,13 +25,15 @@ namespace Platformer
         private int Score;
         private float TimeToPoint;
 
-        SpriteFont DefaultFont;
-        Vector2 FontPosition;
+        private SpriteFont DefaultFont;
+        private Vector2 ScorePosition;
 
-        KeyboardState PreviousKeyboardState;
-        public bool IsPaused;
+        private KeyboardState PreviousKeyboardState;
+        private bool IsPaused;
+        private bool GameOver;
 
-        public List<UIElement> PauseMenu;
+        private List<UIElement> PauseMenu;
+        private Image ScoreBackground;
 
         public MainGame()
         {
@@ -44,7 +46,6 @@ namespace Platformer
         protected override void Initialize()
         {
             Vector2 screenCenter = new Vector2(Graphics.PreferredBackBufferWidth / 2, Graphics.PreferredBackBufferHeight / 2);
-            FontPosition = new Vector2(Graphics.GraphicsDevice.Viewport.Width / 2, 100);
 
             CurrentLevel = new Level("lvl1.txt");
 
@@ -60,9 +61,11 @@ namespace Platformer
             MainCamera = new Camera(person, screenCenter);
             MainCamera.rightBorder = Convert.ToInt32(CurrentLevel.GridSize.X);
             MainCamera.topBorder = -512;
-            MainCamera.bottomBorder = Convert.ToInt32(CurrentLevel.GridSize.Y);
+            MainCamera.bottomBorder = Convert.ToInt32(CurrentLevel.GridSize.Y);            
 
             Score = SaveSystem.Load().Score;
+            ScorePosition = new Vector2(Graphics.GraphicsDevice.Viewport.Width / 2, 30);
+            ScoreBackground = new Image(ScorePosition, "UI/score background", Content);
             PreviousKeyboardState = Keyboard.GetState();
 
             PauseMenu = new List<UIElement>();
@@ -85,7 +88,7 @@ namespace Platformer
         {
             SpriteBatch = new SpriteBatch(GraphicsDevice);
             CurrentLevel.LoadGameObjectTextures(Content);
-            DefaultFont = Content.Load<SpriteFont>("Arial");
+            DefaultFont = Content.Load<SpriteFont>("Calibri");
         }
 
         protected override void Update(GameTime gameTime)
@@ -108,13 +111,14 @@ namespace Platformer
                 foreach (GameObject gameObject in CurrentLevel.GameObjects)
                 {
                     //Input
-                    if (gameObject.Controller != null)
+                    if (gameObject.Controller != null && !GameOver)
                     {
                         gameObject.Controller.GetInput();
                         if (gameObject.PhysicalBody.IsGrounded && gameObject.Controller.IsJumping && gameObject.PhysicalBody.Velocity.Y >= 0) gameObject.PhysicalBody.AddVelocityY(-20f);
                         gameObject.PhysicalBody.AddVelocityX(gameObject.Controller.MoveX);
                         if (gameObject.Controller.MoveX > 0) gameObject.Flip = false;
                         else if (gameObject.Controller.MoveX < 0) gameObject.Flip = true;
+                        if (gameObject.Position.Y > CurrentLevel.GridSize.Y) GameOver = true;
                     }
 
                     //Enemy
@@ -159,7 +163,7 @@ namespace Platformer
                                     if (!playerFalling || !playerGoingDownwards)
                                     {
                                         gameObjectsToRemove.Add(other);
-                                        Debug.WriteLine(other.PhysicalBody.Velocity.Y.ToString());
+                                        GameOver = true;
                                         continue;
                                     }
                                 }
@@ -260,7 +264,7 @@ namespace Platformer
 
                 //Score
                 TimeToPoint += (1f / 60f);
-                if (TimeToPoint > 0.5f)
+                if (TimeToPoint > 0.5f && !IsPaused && !GameOver)
                 {
                     TimeToPoint = 0;
                     Score += 1;
@@ -301,36 +305,20 @@ namespace Platformer
 
             CurrentLevel.DrawGameObjects(SpriteBatch, MainCamera.Origin - MainCamera.Position);
 
-            string output = $"Score: {Score}";
-            Vector2 fontOrigin = DefaultFont.MeasureString(output) / 2;            
-
             if (IsPaused)
             {
                 foreach (UIElement e in PauseMenu)
                 {
                     e.Draw(SpriteBatch);
-
-                    if (e is Button)
-                    {
-                        switch ((e as Button).Action)
-                        {
-                            case Button.ButtonAction.Resume:
-                                output = "Resume";
-                                fontOrigin = DefaultFont.MeasureString(output) / 2;
-                                SpriteBatch.DrawString(DefaultFont, output, e.Position, Color.Black, 0, fontOrigin, 1.0f, SpriteEffects.None, 0f);
-                                break;
-                            case Button.ButtonAction.Exit:
-                                output = "Exit";
-                                fontOrigin = DefaultFont.MeasureString(output) / 2;
-                                SpriteBatch.DrawString(DefaultFont, output, e.Position, Color.Black, 0, fontOrigin, 1.0f, SpriteEffects.None, 0f);
-                                break;
-                        }
-                    }
-                }
+                    if (e is Button) (e as Button).DrawText(SpriteBatch, DefaultFont);
+                }                
             }
             else
             {
-                SpriteBatch.DrawString(DefaultFont, output, FontPosition, Color.Black, 0, fontOrigin, 1.0f, SpriteEffects.None, 0f);
+                string output = $"Score: {Score}";
+                Vector2 fontOrigin = DefaultFont.MeasureString(output) / 2;
+                ScoreBackground.Draw(SpriteBatch);
+                SpriteBatch.DrawString(DefaultFont, output, ScorePosition, Color.White, 0, fontOrigin, 1.0f, SpriteEffects.None, 0f);
             }
 
             SpriteBatch.End();

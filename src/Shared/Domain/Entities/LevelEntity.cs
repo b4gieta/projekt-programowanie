@@ -74,6 +74,14 @@ namespace LevelEntity
                         GameObjects.Add(grass);
                     }
 
+                    if (fileContent[i][j] == 'B')
+                    {
+                        GameObject grass = new GameObject("Box", new Vector2(32 + 64 * j, 32 + 64 * i), "Sprites/box");
+                        grass.PhysicalBody = new PhysicalBody();
+                        grass.PhysicalBody.IsStatic = true;
+                        GameObjects.Add(grass);
+                    }
+
                     else if (fileContent[i][j] == 'P') PlayerSpawn = new Vector2(32 + 64 * j, 32 + 64 * i);
 
                     else if (fileContent[i][j] == 'G')
@@ -84,16 +92,15 @@ namespace LevelEntity
 
                     else if (fileContent[i][j] == 'T')
                     {
-                        int trees = rnd.Next(1, 3);
+                        int trees = 1;
+                        if (rnd.Next(0, 100) > 70) trees++;
                         for (int k = 0; k < trees; k++)
                         {
-                            int variant = rnd.Next(0, 2);
-                            GameObject tree = new GameObject("Tree", new Vector2(32 + 64 * j, 32 + 64 * i), $"Sprites/tree{variant}");
+                            GameObject tree = new GameObject("Tree", new Vector2(32 + 64 * j, 32 + 64 * i), $"Sprites/tree{k}");
                             tree.TextureOffset = new Vector2(rnd.Next(-30, 30), -64);
-                            tree.Layer = 0.8f + (0.01f * (j % 5)) + (0.1f * variant);
-                            tree.Parallax = new Vector2(0.9f - 0.05f * variant, 1f);
+                            tree.Layer = 0.8f + (0.01f * (j % 5)) + (0.1f * k);
+                            tree.Parallax = new Vector2(0.9f - 0.05f * k, 1f);
                             if (rnd.Next(0, 100) > 50) tree.Flip = true;
-                            Debug.WriteLine(tree.Layer.ToString());
                             GameObjects.Add(tree);
                         }
                     }
