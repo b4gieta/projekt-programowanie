@@ -20,18 +20,23 @@ namespace CameraEntity
             Position = Origin;
         }
 
-        public void UpdatePosition(GraphicsDeviceManager graphics)
+        private Vector2 GetClampedPosition(GraphicsDeviceManager graphics)
         {
             Vector2 targetPos = Target.Position;
             targetPos.X = Math.Clamp(targetPos.X, leftBorder + graphics.GraphicsDevice.Viewport.Width / 2, rightBorder - graphics.GraphicsDevice.Viewport.Width / 2);
             targetPos.Y = Math.Clamp(targetPos.Y, topBorder + graphics.GraphicsDevice.Viewport.Height / 2, bottomBorder - graphics.GraphicsDevice.Viewport.Height / 2);
+            return targetPos;
+        }
 
+        public void UpdatePosition(GraphicsDeviceManager graphics)
+        {
+            Vector2 targetPos = GetClampedPosition(graphics);
             Position = Vector2.Lerp(Position, targetPos, 0.2f);
         }
 
         public void ForceFocusOnTarget(GraphicsDeviceManager graphics)
         {
-            Position = Target.Position;
+            Position = GetClampedPosition(graphics);
             UpdatePosition(graphics);
         }
     }

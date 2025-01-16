@@ -23,6 +23,7 @@ namespace Platformer
         private Level CurrentLevel;
         private Camera MainCamera;
 
+        private int Lives;
         private int Score;
         private float TimeToPoint;
 
@@ -34,6 +35,7 @@ namespace Platformer
         private bool GameOver;
 
         private List<UIElement> PauseMenu;
+        private List<UIElement> GameOverMenu;
         private Image ScoreBackground;
 
         public MainGame()
@@ -66,14 +68,25 @@ namespace Platformer
             Image background = new Image(screenCenter, "UI/pause background", Content);
             PauseMenu.Add(background);
 
-            Button resumeButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y - 74), Content, Button.ButtonAction.Resume);
+            Button resumeButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y - 37), Content, Button.ButtonAction.Resume);
             PauseMenu.Add(resumeButton);
 
-            Button restartButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y), Content, Button.ButtonAction.Restart);
-            PauseMenu.Add(restartButton);
-
-            Button exitButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y + 74), Content, Button.ButtonAction.Exit);
+            Button exitButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y + 37), Content, Button.ButtonAction.Exit);
             PauseMenu.Add(exitButton);
+        }
+
+        private void InitializeGameOverMenu(Vector2 screenCenter)
+        {
+            GameOverMenu = new List<UIElement>();
+
+            Image background = new Image(screenCenter, "UI/gameover background", Content);
+            GameOverMenu.Add(background);
+
+            Button restartButton = new Button(new Vector2(screenCenter.X, screenCenter.Y + 32), Content, Button.ButtonAction.Restart);
+            GameOverMenu.Add(restartButton);
+
+            Button exitButton = new Button(new Vector2(screenCenter.X, screenCenter.Y + 106), Content, Button.ButtonAction.Exit);
+            GameOverMenu.Add(exitButton);
         }
 
         private void UpdateInput(GameObject gameObject)
@@ -214,16 +227,65 @@ namespace Platformer
         private void RemoveDeadEnemies()
         {
             List<GameObject> deadEnemies = CurrentLevel.GameObjects.Where(go => go.Enemy != null && go.Enemy.IsDead).ToList();
-            foreach (GameObject e in deadEnemies) CurrentLevel.GameObjects.Remove(e);
+            foreach (GameObject e in deadEnemies)
+            {
+                Score += 1000;
+                CurrentLevel.GameObjects.Remove(e);
+            }
+        }
+
+        private void UpdateMenu(List<UIElement> menu, MouseState mouseState)
+        {
+            foreach (UIElement e in menu)
+            {
+                if (e is not Button) continue;
+                Button button = e as Button;
+                button.CheckHover(mouseState.Position);
+                if (!button.Hover || mouseState.LeftButton != ButtonState.Pressed) continue;
+                switch (button.Action)
+                {
+                    case Button.ButtonAction.Resume:
+                        IsPaused = false;
+                        break;
+                    case Button.ButtonAction.Exit:
+                        SaveSystem.Save(Score, Lives);
+                        Exit();
+                        break;
+                    case Button.ButtonAction.Restart:
+                        LoadLevel("lvl1.txt");
+                        break;
+                }
+            }
+        }
+
+        private void DrawLives()
+        {
+            Vector2 leftCorner = new Vector2(24, 24);
+            for(int i = 0; i < Lives; i++)
+            {
+                Vector2 offset = new Vector2(i * 32, 0);
+                Image head = new Image(leftCorner + offset, "Sprites/head", Content);
+                head.Draw(SpriteBatch);
+            }
         }
 
         private void LoadLevel(string levelName)
         {
+            Lives--;
+            if (Lives == 0)
+            {
+                Score = 0;
+                Lives = 3;
+            }
+
+            SaveSystem.Save(Score, Lives);
+
             CurrentLevel = new Level(levelName);
             GameObject player = GameObject.GetPlayer(CurrentLevel.PlayerSpawn);
             CurrentLevel.GameObjects.Add(player);
             CurrentLevel.LoadGameObjectTextures(Content);
             MainCamera.Target = player;
+            MainCamera.ForceFocusOnTarget(Graphics);
             IsPaused = false;
             GameOver = false;
         }
@@ -232,6 +294,8 @@ namespace Platformer
         {
             Vector2 screenCenter = new Vector2(Graphics.PreferredBackBufferWidth / 2, Graphics.PreferredBackBufferHeight / 2);
 
+            Lives = 3;
+
             CurrentLevel = new Level("lvl1.txt");
             GameObject player = GameObject.GetPlayer(CurrentLevel.PlayerSpawn);
             CurrentLevel.GameObjects.Add(player);
@@ -239,6 +303,7 @@ namespace Platformer
             InitializeCamera(player, screenCenter);
             InitializeUI();
             InitializePauseMenu(screenCenter);
+            InitializeGameOverMenu(screenCenter);
 
             PreviousKeyboardState = Keyboard.GetState();
 
@@ -257,15 +322,11 @@ namespace Platformer
             KeyboardState keyboardState = Keyboard.GetState();
             MouseState mouseState = Mouse.GetState();
 
-            //Pause
-            if (keyboardState.IsKeyDown(Keys.Escape) && keyboardState.IsKeyDown(Keys.Escape) != PreviousKeyboardState.IsKeyDown(Keys.Escape))
-            {
-                IsPaused = !IsPaused;
-                SaveSystem.Save(Score);
-                Debug.WriteLine(SaveSystem.GetSavePath());
-            }
+            if (keyboardState.IsKeyDown(Keys.Escape) && keyboardState.IsKeyDown(Keys.Escape) != PreviousKeyboardState.IsKeyDown(Keys.Escape)) IsPaused = !IsPaused;
 
-            if (!IsPaused)
+            if (GameOver) UpdateMenu(GameOverMenu, mouseState);
+            else if (IsPaused) UpdateMenu(PauseMenu, mouseState);
+            else
             {
                 foreach (GameObject gameObject in CurrentLevel.GameObjects)
                 {
@@ -273,7 +334,6 @@ namespace Platformer
                     if (gameObject.Enemy != null) UpdateEnemy(gameObject);
                     if (gameObject.PhysicalBody != null && !gameObject.PhysicalBody.IsStatic) UpdatePhysics(gameObject);
                     if (gameObject.Animation != null) gameObject.Animation.EvaluateState(2f / 60f);
-                    if (gameObject.Enemy != null && gameObject.Enemy.IsDead) Score += 1000;
                 }
 
                 RemoveDeadEnemies();
@@ -288,28 +348,6 @@ namespace Platformer
                     Score += 1;
                 }
             }
-            else
-            {
-                foreach (UIElement e in PauseMenu)
-                {
-                    if (e is not Button) continue;
-                    Button button = e as Button;
-                    button.CheckHover(mouseState.Position);
-                    if (!button.Hover || mouseState.LeftButton != ButtonState.Pressed) continue;
-                    switch (button.Action)
-                    {
-                        case Button.ButtonAction.Resume:
-                            IsPaused = false;
-                            break;
-                        case Button.ButtonAction.Exit:
-                            Exit();
-                            break;
-                        case Button.ButtonAction.Restart:
-                            LoadLevel("lvl1.txt");
-                            break;
-                    }
-                }
-            }
 
             PreviousKeyboardState = Keyboard.GetState();
             base.Update(gameTime);
@@ -322,13 +360,21 @@ namespace Platformer
 
             CurrentLevel.DrawGameObjects(SpriteBatch, MainCamera.Origin - MainCamera.Position);
 
-            if (IsPaused)
+            if (GameOver)
+            {
+                foreach (UIElement e in GameOverMenu)
+                {
+                    e.Draw(SpriteBatch);
+                    if (e is Button) (e as Button).DrawText(SpriteBatch, DefaultFont);
+                }
+            }
+            else if (IsPaused)
             {
                 foreach (UIElement e in PauseMenu)
                 {
                     e.Draw(SpriteBatch);
                     if (e is Button) (e as Button).DrawText(SpriteBatch, DefaultFont);
-                }                
+                }
             }
             else
             {
@@ -336,6 +382,7 @@ namespace Platformer
                 Vector2 fontOrigin = DefaultFont.MeasureString(output) / 2;
                 ScoreBackground.Draw(SpriteBatch);
                 SpriteBatch.DrawString(DefaultFont, output, ScorePosition, Color.White, 0, fontOrigin, 1.0f, SpriteEffects.None, 0f);
+                DrawLives();
             }
 
             SpriteBatch.End();

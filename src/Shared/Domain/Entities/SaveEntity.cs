@@ -7,6 +7,7 @@ namespace SaveEntity
         public class SaveData
         {
             public int Score { get; set; } = 0;
+            public int Lives { get; set; } = 0;
         }
 
         public static string GetSavePath()
@@ -14,10 +15,11 @@ namespace SaveEntity
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"MS", "save.json");
         }
 
-        public static void Save(int score)
+        public static void Save(int score, int lives)
         {
             SaveData data = new SaveData();
             data.Score = score;
+            data.Lives = lives;
 
             string json = JsonConvert.SerializeObject(data);
             
