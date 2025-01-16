@@ -28,5 +28,11 @@ namespace CameraEntity
 
             Position = Vector2.Lerp(Position, targetPos, 0.2f);
         }
+
+        public void ForceFocusOnTarget(GraphicsDeviceManager graphics)
+        {
+            Position = Target.Position;
+            UpdatePosition(graphics);
+        }
     }
 }

@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using UIElementEntity;
+using System.Linq;
 
 namespace Platformer
 {
@@ -43,43 +44,203 @@ namespace Platformer
             IsMouseVisible = true;
         }
 
-        protected override void Initialize()
+        private void InitializeCamera(GameObject target, Vector2 screenCenter)
         {
-            Vector2 screenCenter = new Vector2(Graphics.PreferredBackBufferWidth / 2, Graphics.PreferredBackBufferHeight / 2);
-
-            CurrentLevel = new Level("lvl1.txt");
-
-            GameObject person = new GameObject("Player", CurrentLevel.PlayerSpawn, "Sprites/player anim");
-            person.PhysicalBody = new PhysicalBody();
-            person.Controller = new Controller();
-            person.Animation = new Animation();
-            person.Layer = 0.1f;
-            person.Width = 32;
-            person.Height = 64;
-            CurrentLevel.GameObjects.Add(person);
-
-            MainCamera = new Camera(person, screenCenter);
+            MainCamera = new Camera(target, screenCenter);
             MainCamera.rightBorder = Convert.ToInt32(CurrentLevel.GridSize.X);
             MainCamera.topBorder = -512;
-            MainCamera.bottomBorder = Convert.ToInt32(CurrentLevel.GridSize.Y);            
+            MainCamera.bottomBorder = Convert.ToInt32(CurrentLevel.GridSize.Y);
+        }
 
+        private void InitializeUI()
+        {
             Score = SaveSystem.Load().Score;
             ScorePosition = new Vector2(Graphics.GraphicsDevice.Viewport.Width / 2, 30);
             ScoreBackground = new Image(ScorePosition, "UI/score background", Content);
-            PreviousKeyboardState = Keyboard.GetState();
+        }
 
+        private void InitializePauseMenu(Vector2 screenCenter)
+        {
             PauseMenu = new List<UIElement>();
 
             Image background = new Image(screenCenter, "UI/pause background", Content);
             PauseMenu.Add(background);
 
-            Button resumeButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y + 37), Content);
-            resumeButton.Action = Button.ButtonAction.Resume;
+            Button resumeButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y - 74), Content, Button.ButtonAction.Resume);
             PauseMenu.Add(resumeButton);
 
-            Button exitButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y - 37), Content);
-            resumeButton.Action = Button.ButtonAction.Exit;
+            Button restartButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y), Content, Button.ButtonAction.Restart);
+            PauseMenu.Add(restartButton);
+
+            Button exitButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y + 74), Content, Button.ButtonAction.Exit);
             PauseMenu.Add(exitButton);
+        }
+
+        private void UpdateInput(GameObject gameObject)
+        {
+            gameObject.Controller.GetInput();
+            if (gameObject.PhysicalBody.IsGrounded && gameObject.Controller.IsJumping && gameObject.PhysicalBody.Velocity.Y >= 0) gameObject.PhysicalBody.AddVelocityY(-20f);
+            gameObject.PhysicalBody.AddVelocityX(gameObject.Controller.MoveX);
+            if (gameObject.Controller.MoveX > 0) gameObject.Flip = false;
+            else if (gameObject.Controller.MoveX < 0) gameObject.Flip = true;
+            if (gameObject.Position.Y > CurrentLevel.GridSize.Y) GameOver = true;
+        }
+
+        private void UpdateEnemy(GameObject gameObject)
+        {
+            int checkX = gameObject.GetTile()[0];
+            int checkY = gameObject.GetTile()[1];
+            if (!gameObject.Enemy.IsGoingRight) checkX -= 1;
+            if (checkX < 0 || checkX >= CurrentLevel.Tilemap[0].Length ||
+                checkY < 0 || checkY >= CurrentLevel.Tilemap.Length)
+            {
+                gameObject.Enemy.IsGoingRight = !gameObject.Enemy.IsGoingRight;
+            }
+            else if (CurrentLevel.Tilemap[checkY][checkX] == 'E') gameObject.Enemy.IsGoingRight = !gameObject.Enemy.IsGoingRight;
+
+            if (gameObject.Enemy.IsGoingRight) gameObject.PhysicalBody.AddVelocityX(1);
+            else gameObject.PhysicalBody.AddVelocityX(-1);
+
+            gameObject.Flip = !gameObject.Enemy.IsGoingRight;
+        }
+
+        private void UpdatePhysics(GameObject gameObject)
+        {
+            CheckXAxis(gameObject);
+            CheckYAxis(gameObject);
+            if (!gameObject.PhysicalBody.IsGrounded && gameObject.Animation != null) UpdateAnimations(gameObject);
+        }
+
+        private void CheckXAxis(GameObject gameObject)
+        {
+            gameObject.PhysicalBody.DampVelocityX(0.33f);
+            Vector2 oldPosition = gameObject.Position;
+            gameObject.SetPositionX(oldPosition.X + gameObject.PhysicalBody.Velocity.X);
+
+            foreach (GameObject other in CurrentLevel.GameObjects)
+            {
+                if (gameObject.Enemy != null && other.Enemy != null) continue;
+
+                if (gameObject != other && other.PhysicalBody != null && gameObject.GetBoundingBox().Intersects(other.GetBoundingBox()))
+                {
+                    //Walk on player to kill him
+                    if (gameObject.Enemy != null && other.Controller != null && !gameObject.Enemy.IsDead)
+                    {
+                        bool playerGoingDownwards = Math.Abs(other.PhysicalBody.Velocity.Y) > Math.Abs(other.PhysicalBody.Velocity.X);
+                        bool playerFalling = other.PhysicalBody.Velocity.Y > 1;
+
+                        if (!playerFalling || !playerGoingDownwards)
+                        {
+                            GameOver = true;
+                            continue;
+                        }
+                    }
+
+                    //Rest of physics
+                    int steps = 10;
+                    for (int i = 0; i < steps; i++)
+                    {
+                        gameObject.SetPositionX(oldPosition.X + gameObject.PhysicalBody.Velocity.X * (1f / steps) * (steps - i));
+                        if (!gameObject.GetBoundingBox().Intersects(other.GetBoundingBox())) break;
+                        gameObject.Position = oldPosition;
+                    }
+                    gameObject.PhysicalBody.SetVelocityX(0);
+                    break;
+                }
+            }
+        }
+
+        private void CheckYAxis(GameObject gameObject)
+        {
+            Vector2 oldPosition = gameObject.Position;
+            if (!gameObject.PhysicalBody.IsGrounded) gameObject.PhysicalBody.AddVelocityY(0.9f);
+            gameObject.SetPositionY(oldPosition.Y + gameObject.PhysicalBody.Velocity.Y);
+            gameObject.PhysicalBody.IsGrounded = false;
+
+            foreach (GameObject other in CurrentLevel.GameObjects)
+            {
+                if (gameObject.Enemy != null && other.Enemy != null) continue;
+
+                if (gameObject != other && other.PhysicalBody != null && gameObject.GetBoundingBox().Intersects(other.GetBoundingBox()))
+                {
+                    //Jump on enemy to kill him
+                    if (gameObject.Controller != null && other.Enemy != null)
+                    {
+                        bool playerGoingDownwards = Math.Abs(gameObject.PhysicalBody.Velocity.Y) > Math.Abs(gameObject.PhysicalBody.Velocity.X);
+                        bool playerFalling = gameObject.PhysicalBody.Velocity.Y > 1;
+
+                        if (playerFalling && playerGoingDownwards && !gameObject.PhysicalBody.IsGrounded)
+                        {
+                            other.Enemy.IsDead = true;
+                            gameObject.PhysicalBody.SetVelocityY(-20);
+                            continue;
+                        }
+                    }
+
+                    //Rest of physics
+                    int steps = 10;
+                    for (int i = 0; i < steps; i++)
+                    {
+                        gameObject.SetPositionY(oldPosition.Y + gameObject.PhysicalBody.Velocity.Y * (1f / steps) * (steps - i));
+                        if (!gameObject.GetBoundingBox().Intersects(other.GetBoundingBox())) break;
+                        gameObject.Position = oldPosition;
+                    }
+                    if (gameObject.PhysicalBody.Velocity.Y >= 0) gameObject.PhysicalBody.IsGrounded = true;
+                    gameObject.PhysicalBody.SetVelocityY(0);
+
+                    break;
+                }
+            }
+        }
+
+        private void UpdateAnimations(GameObject gameObject)
+        {
+            if (gameObject.PhysicalBody.Velocity.Y < 0) gameObject.Animation.CurrentState = Animation.State.Jumping;
+            else if (gameObject.PhysicalBody.Velocity.Y > 0) gameObject.Animation.CurrentState = Animation.State.Falling;
+            else
+            {
+                if (gameObject.PhysicalBody.Velocity.X < 0.1f && gameObject.PhysicalBody.Velocity.X > -0.1f) gameObject.Animation.CurrentState = Animation.State.Idle;
+                else gameObject.Animation.CurrentState = Animation.State.Walking;
+            }
+        }
+
+        private void LockPlayerOnScreen()
+        {
+            GameObject player = CurrentLevel.GameObjects.Where(go => go.Controller != null).First();
+            Rectangle hitbox = new Rectangle(0, 0, player.Width, player.Height);
+            player.Position = player.PhysicalBody.KeepInScreenBoundsX(Graphics, hitbox, player.Position, MainCamera);
+        }
+
+        private void RemoveDeadEnemies()
+        {
+            List<GameObject> deadEnemies = CurrentLevel.GameObjects.Where(go => go.Enemy != null && go.Enemy.IsDead).ToList();
+            foreach (GameObject e in deadEnemies) CurrentLevel.GameObjects.Remove(e);
+        }
+
+        private void LoadLevel(string levelName)
+        {
+            CurrentLevel = new Level(levelName);
+            GameObject player = GameObject.GetPlayer(CurrentLevel.PlayerSpawn);
+            CurrentLevel.GameObjects.Add(player);
+            CurrentLevel.LoadGameObjectTextures(Content);
+            MainCamera.Target = player;
+            IsPaused = false;
+            GameOver = false;
+        }
+
+        protected override void Initialize()
+        {
+            Vector2 screenCenter = new Vector2(Graphics.PreferredBackBufferWidth / 2, Graphics.PreferredBackBufferHeight / 2);
+
+            CurrentLevel = new Level("lvl1.txt");
+            GameObject player = GameObject.GetPlayer(CurrentLevel.PlayerSpawn);
+            CurrentLevel.GameObjects.Add(player);
+
+            InitializeCamera(player, screenCenter);
+            InitializeUI();
+            InitializePauseMenu(screenCenter);
+
+            PreviousKeyboardState = Keyboard.GetState();
 
             base.Initialize();
         }
@@ -106,165 +267,22 @@ namespace Platformer
 
             if (!IsPaused)
             {
-                //GameObjects
-                List<GameObject> gameObjectsToRemove = new List<GameObject>();
                 foreach (GameObject gameObject in CurrentLevel.GameObjects)
                 {
-                    //Input
-                    if (gameObject.Controller != null && !GameOver)
-                    {
-                        gameObject.Controller.GetInput();
-                        if (gameObject.PhysicalBody.IsGrounded && gameObject.Controller.IsJumping && gameObject.PhysicalBody.Velocity.Y >= 0) gameObject.PhysicalBody.AddVelocityY(-20f);
-                        gameObject.PhysicalBody.AddVelocityX(gameObject.Controller.MoveX);
-                        if (gameObject.Controller.MoveX > 0) gameObject.Flip = false;
-                        else if (gameObject.Controller.MoveX < 0) gameObject.Flip = true;
-                        if (gameObject.Position.Y > CurrentLevel.GridSize.Y) GameOver = true;
-                    }
-
-                    //Enemy
-                    if (gameObject.Enemy != null)
-                    {
-                        int checkX = gameObject.GetTile()[0];
-                        int checkY = gameObject.GetTile()[1];
-                        if (!gameObject.Enemy.IsGoingRight) checkX -= 1;
-                        if (checkX < 0 || checkX >= CurrentLevel.Tilemap[0].Length ||
-                            checkY < 0 || checkY >= CurrentLevel.Tilemap.Length)
-                        {
-                            gameObject.Enemy.IsGoingRight = !gameObject.Enemy.IsGoingRight;
-                        }
-                        else if (CurrentLevel.Tilemap[checkY][checkX] == 'E') gameObject.Enemy.IsGoingRight = !gameObject.Enemy.IsGoingRight;
-
-                        if (gameObject.Enemy.IsGoingRight) gameObject.PhysicalBody.AddVelocityX(1);
-                        else gameObject.PhysicalBody.AddVelocityX(-1);
-
-                        gameObject.Flip = !gameObject.Enemy.IsGoingRight;
-                    }
-
-                    //Physics
-                    if (gameObject.PhysicalBody != null && !gameObject.PhysicalBody.IsStatic)
-                    {
-                        //X axis
-                        gameObject.PhysicalBody.DampVelocityX(0.33f);
-                        Vector2 oldPosition = gameObject.Position;
-                        gameObject.SetPositionX(oldPosition.X + gameObject.PhysicalBody.Velocity.X);
-
-                        foreach (GameObject other in CurrentLevel.GameObjects)
-                        {
-                            if (gameObject.Enemy != null && other.Enemy != null) continue;
-
-                            if (gameObject != other && other.PhysicalBody != null && gameObject.GetBoundingBox().Intersects(other.GetBoundingBox()))
-                            {
-                                //Walk on player to kill him
-                                if (gameObject.Enemy != null && other.Controller != null && !gameObject.Enemy.IsDead)
-                                {
-                                    bool playerGoingDownwards = Math.Abs(other.PhysicalBody.Velocity.Y) > Math.Abs(other.PhysicalBody.Velocity.X);
-                                    bool playerFalling = other.PhysicalBody.Velocity.Y > 1;
-
-                                    if (!playerFalling || !playerGoingDownwards)
-                                    {
-                                        gameObjectsToRemove.Add(other);
-                                        GameOver = true;
-                                        continue;
-                                    }
-                                }
-
-                                //Rest of physics
-                                int steps = 10;
-                                for (int i = 0; i < steps; i++)
-                                {
-                                    gameObject.SetPositionX(oldPosition.X + gameObject.PhysicalBody.Velocity.X * (1f / steps) * (steps - i));
-                                    if (!gameObject.GetBoundingBox().Intersects(other.GetBoundingBox())) break;
-                                    gameObject.Position = oldPosition;
-                                }
-                                gameObject.PhysicalBody.SetVelocityX(0);
-                                break;
-                            }
-                        }
-
-                        //Y axis
-                        oldPosition = gameObject.Position;
-                        if (!gameObject.PhysicalBody.IsGrounded) gameObject.PhysicalBody.AddVelocityY(0.9f);
-                        gameObject.SetPositionY(oldPosition.Y + gameObject.PhysicalBody.Velocity.Y);
-                        gameObject.PhysicalBody.IsGrounded = false;
-
-                        foreach (GameObject other in CurrentLevel.GameObjects)
-                        {
-                            if (gameObject.Enemy != null && other.Enemy != null) continue;
-
-                            if (gameObject != other && other.PhysicalBody != null && gameObject.GetBoundingBox().Intersects(other.GetBoundingBox()))
-                            {
-                                //Jump on enemy to kill him
-                                if (gameObject.Controller != null && other.Enemy != null)
-                                {
-                                    bool playerGoingDownwards = Math.Abs(gameObject.PhysicalBody.Velocity.Y) > Math.Abs(gameObject.PhysicalBody.Velocity.X);
-                                    bool playerFalling = gameObject.PhysicalBody.Velocity.Y > 1;
-
-                                    if (playerFalling && playerGoingDownwards && !gameObject.PhysicalBody.IsGrounded)
-                                    {
-                                        other.Enemy.IsDead = true;
-                                        gameObject.PhysicalBody.SetVelocityY(-20);
-                                        continue;
-                                    }
-                                }
-
-                                //Rest of physics
-                                int steps = 10;
-                                for (int i = 0; i < steps; i++)
-                                {
-                                    gameObject.SetPositionY(oldPosition.Y + gameObject.PhysicalBody.Velocity.Y * (1f / steps) * (steps - i));
-                                    if (!gameObject.GetBoundingBox().Intersects(other.GetBoundingBox())) break;
-                                    gameObject.Position = oldPosition;
-                                }
-                                if (gameObject.PhysicalBody.Velocity.Y >= 0) gameObject.PhysicalBody.IsGrounded = true;
-                                gameObject.PhysicalBody.SetVelocityY(0);
-
-                                break;
-                            }
-                        }
-
-                        //Keep player in screen bounds horizontally
-                        if (gameObject.Controller != null)
-                        {
-                            Rectangle hitbox = new Rectangle(0, 0, gameObject.Width, gameObject.Height);
-                            gameObject.Position = gameObject.PhysicalBody.KeepInScreenBoundsX(Graphics, hitbox, gameObject.Position, MainCamera);
-                        }
-
-                        //Set animations
-                        if (!gameObject.PhysicalBody.IsGrounded && gameObject.Animation != null)
-                        {
-                            if (gameObject.PhysicalBody.Velocity.Y < 0) gameObject.Animation.CurrentState = Animation.State.Jumping;
-                            else if (gameObject.PhysicalBody.Velocity.Y > 0) gameObject.Animation.CurrentState = Animation.State.Falling;
-                            else
-                            {
-                                if (gameObject.PhysicalBody.Velocity.X < 0.1f && gameObject.PhysicalBody.Velocity.X > -0.1f) gameObject.Animation.CurrentState = Animation.State.Idle;
-                                else gameObject.Animation.CurrentState = Animation.State.Walking;
-                            }
-                        }
-                    }
-
-                    //Animation
+                    if (gameObject.Controller != null && !GameOver) UpdateInput(gameObject);
+                    if (gameObject.Enemy != null) UpdateEnemy(gameObject);
+                    if (gameObject.PhysicalBody != null && !gameObject.PhysicalBody.IsStatic) UpdatePhysics(gameObject);
                     if (gameObject.Animation != null) gameObject.Animation.EvaluateState(2f / 60f);
-
-                    //Get dead enemnies
-                    if (gameObject.Enemy != null && gameObject.Enemy.IsDead)
-                    {
-                        Score += 1000;
-                        gameObjectsToRemove.Add(gameObject);
-                    }
+                    if (gameObject.Enemy != null && gameObject.Enemy.IsDead) Score += 1000;
                 }
 
-                //Remove dead enemies
-                foreach (GameObject gameObject in gameObjectsToRemove)
-                {
-                    if (CurrentLevel.GameObjects.Contains(gameObject)) CurrentLevel.GameObjects.Remove(gameObject);
-                }
+                RemoveDeadEnemies();
 
-                //Camera
+                LockPlayerOnScreen();
                 MainCamera.UpdatePosition(Graphics);
 
-                //Score
                 TimeToPoint += (1f / 60f);
-                if (TimeToPoint > 0.5f && !IsPaused && !GameOver)
+                if (TimeToPoint > 0.5f && !GameOver)
                 {
                     TimeToPoint = 0;
                     Score += 1;
@@ -274,22 +292,21 @@ namespace Platformer
             {
                 foreach (UIElement e in PauseMenu)
                 {
-                    if (e is Button)
+                    if (e is not Button) continue;
+                    Button button = e as Button;
+                    button.CheckHover(mouseState.Position);
+                    if (!button.Hover || mouseState.LeftButton != ButtonState.Pressed) continue;
+                    switch (button.Action)
                     {
-                        Button button = e as Button;
-                        button.CheckHover(mouseState.Position);
-                        if (button.Hover && mouseState.LeftButton == ButtonState.Pressed)
-                        {
-                            switch(button.Action)
-                            {
-                                case Button.ButtonAction.Resume:
-                                    IsPaused = false;
-                                    break;
-                                case Button.ButtonAction.Exit:
-                                    Exit();
-                                    break;
-                            }
-                        }
+                        case Button.ButtonAction.Resume:
+                            IsPaused = false;
+                            break;
+                        case Button.ButtonAction.Exit:
+                            Exit();
+                            break;
+                        case Button.ButtonAction.Restart:
+                            LoadLevel("lvl1.txt");
+                            break;
                     }
                 }
             }

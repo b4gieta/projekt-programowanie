@@ -19,11 +19,12 @@ namespace UIElementEntity
         public Texture2D TextureNormal { get; set; }
         public Texture2D TextureHover { get; set; }
         public Texture2D TextureClick { get; set; }
-        public enum ButtonAction {Resume, Exit};
+        public enum ButtonAction {Resume, Exit, Restart};
         public ButtonAction Action { get; set; }
 
-        public Button(Vector2 position, ContentManager content)
+        public Button(Vector2 position, ContentManager content, ButtonAction action)
         {
+            Action = action;
             Position = position;
             TextureNormal = content.Load<Texture2D>("UI/button normal");
             TextureHover = content.Load<Texture2D>("UI/button hover");

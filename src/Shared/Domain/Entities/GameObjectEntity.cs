@@ -61,5 +61,17 @@ namespace GameObjectEntity
             int[] result = [(int)Math.Round((Position.X / 64)), (int)Math.Round((Position.Y / 64))];
             return result;
         }
+
+        public static GameObject GetPlayer(Vector2 spawn)
+        {
+            GameObject person = new GameObject("Player", spawn, "Sprites/player anim");
+            person.PhysicalBody = new PhysicalBody();
+            person.Controller = new Controller();
+            person.Animation = new Animation();
+            person.Layer = 0.1f;
+            person.Width = 32;
+            person.Height = 64;
+            return person;
+        }
     }
 }
