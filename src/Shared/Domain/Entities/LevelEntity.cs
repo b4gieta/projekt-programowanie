@@ -4,7 +4,6 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using PhysicalBodyEntity;
 using EnemyEntity;
-using System.Diagnostics;
 
 namespace LevelEntity
 {
@@ -55,6 +54,20 @@ namespace LevelEntity
             }
         }
 
+        public int GetPointsForEnemies()
+        {
+            int score = 0;
+
+            List<GameObject> deadEnemies = GameObjects.Where(go => go.Enemy != null && go.Enemy.IsDead).ToList();
+            foreach (GameObject e in deadEnemies)
+            {
+                score += 1000;
+                GameObjects.Remove(e);
+            }
+
+            return score;
+        }
+
         public Level(string fileName)
         {
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), "../../../Content/Levels/" + fileName);
@@ -66,7 +79,7 @@ namespace LevelEntity
             {
                 for (int j = 0; j < fileContent[i].Length; j++)
                 {
-                    if (fileContent[i][j] == 'D')
+                    if (fileContent[i][j] == 'G')
                     {
                         GameObject grass = new GameObject("Grass", new Vector2(32 + 64 * j, 32 + 64 * i), "Sprites/grass");
                         grass.PhysicalBody = new PhysicalBody();
@@ -74,17 +87,25 @@ namespace LevelEntity
                         GameObjects.Add(grass);
                     }
 
+                    if (fileContent[i][j] == 'D')
+                    {
+                        GameObject dirt = new GameObject("Dirt", new Vector2(32 + 64 * j, 32 + 64 * i), "Sprites/dirt");
+                        dirt.PhysicalBody = new PhysicalBody();
+                        dirt.PhysicalBody.IsStatic = true;
+                        GameObjects.Add(dirt);
+                    }
+
                     if (fileContent[i][j] == 'B')
                     {
-                        GameObject grass = new GameObject("Box", new Vector2(32 + 64 * j, 32 + 64 * i), "Sprites/box");
-                        grass.PhysicalBody = new PhysicalBody();
-                        grass.PhysicalBody.IsStatic = true;
-                        GameObjects.Add(grass);
+                        GameObject box = new GameObject("Box", new Vector2(32 + 64 * j, 32 + 64 * i), "Sprites/box");
+                        box.PhysicalBody = new PhysicalBody();
+                        box.PhysicalBody.IsStatic = true;
+                        GameObjects.Add(box);
                     }
 
                     else if (fileContent[i][j] == 'P') PlayerSpawn = new Vector2(32 + 64 * j, 32 + 64 * i);
 
-                    else if (fileContent[i][j] == 'G')
+                    else if (fileContent[i][j] == 'K')
                     {
                         GameObject enemy = Enemy.GetGoomba(new Vector2(32 + 64 * j, 32 + 64 * i), "Sprites/enemy anim");
                         GameObjects.Add(enemy);

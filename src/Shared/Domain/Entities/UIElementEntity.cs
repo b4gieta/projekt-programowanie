@@ -1,7 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using System.Diagnostics;
 
 namespace UIElementEntity
 {
@@ -10,6 +9,38 @@ namespace UIElementEntity
         public Vector2 Position { get; set; }
 
         public virtual void Draw(SpriteBatch spriteBatch) { }
+
+        public static List<UIElement> CreatePauseMenu(Vector2 screenCenter, ContentManager content)
+        {
+            List<UIElement> pauseMenu = new List<UIElement>();
+
+            Image background = new Image(screenCenter, "UI/pause background", content);
+            pauseMenu.Add(background);
+
+            Button resumeButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y - 37), content, Button.ButtonAction.Resume);
+            pauseMenu.Add(resumeButton);
+
+            Button exitButton = new Button(new Vector2(screenCenter.X - 200, screenCenter.Y + 37), content, Button.ButtonAction.Exit);
+            pauseMenu.Add(exitButton);
+
+            return pauseMenu;
+        }
+
+        public static List<UIElement> CreateGameOverMenu(Vector2 screenCenter, ContentManager content)
+        {
+            List<UIElement> gameOverMenu = new List<UIElement>();
+
+            Image background = new Image(screenCenter, "UI/gameover background", content);
+            gameOverMenu.Add(background);
+
+            Button restartButton = new Button(new Vector2(screenCenter.X, screenCenter.Y + 32), content, Button.ButtonAction.Restart);
+            gameOverMenu.Add(restartButton);
+
+            Button exitButton = new Button(new Vector2(screenCenter.X, screenCenter.Y + 106), content, Button.ButtonAction.Exit);
+            gameOverMenu.Add(exitButton);
+
+            return gameOverMenu;
+        }
     }
 
     public class Button : UIElement
@@ -65,6 +96,16 @@ namespace UIElementEntity
         public override void Draw(SpriteBatch spriteBatch)
         {
             spriteBatch.Draw(Texture, Position, null, Color.White, 0f, new Vector2(Texture.Width / 2, Texture.Height / 2), Vector2.One, SpriteEffects.None, 0.002f);
+        }
+
+        public static void DrawLives(int lives, Vector2 origin, SpriteBatch spriteBatch, ContentManager content)
+        {
+            for (int i = 0; i < lives; i++)
+            {
+                Vector2 offset = new Vector2(i * 32, 0);
+                Image head = new Image(origin + offset, "Sprites/head", content);
+                head.Draw(spriteBatch);
+            }
         }
     }
 }

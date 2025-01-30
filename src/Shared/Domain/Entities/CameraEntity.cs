@@ -1,6 +1,6 @@
 ﻿using GameObjectEntity;
+using LevelEntity;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 namespace CameraEntity
 {
     public class Camera
@@ -13,11 +13,15 @@ namespace CameraEntity
         public int topBorder { get; set; } = 0;
         public int bottomBorder { get; set; } = 2048;
 
-        public Camera(GameObject target, Vector2 origin)
+        public Camera(GameObject target, Vector2 origin, Level currentLevel)
         {
             Target = target;
             Origin = origin;
             Position = Origin;
+
+            rightBorder = Convert.ToInt32(currentLevel.GridSize.X);
+            topBorder = -512;
+            bottomBorder = Convert.ToInt32(currentLevel.GridSize.Y);
         }
 
         private Vector2 GetClampedPosition(GraphicsDeviceManager graphics)
